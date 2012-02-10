@@ -24,7 +24,9 @@ _start: /* programutføring vil starte her */
     /* r13: INTC    */
     lddpc r0, piob_pointer /*saving PIO constants for later use */
     lddpc r1, pioc_pointer
-    lddpc r13, intc_pointer 
+    lddpc r13, intc_pointer
+    lddpc sp, stackpointer
+ 
     mov r2, 0xff /* 11111111 used to initialize the diodes*/
     mov r3, 0x00 /* 00000000 used on various occasions */
     mov r4, 0b00000001 /* constant to set initial LED  */
@@ -55,44 +57,45 @@ _start: /* programutføring vil starte her */
 
 /* Main loop. Hang out here when nothing else is happening. */
 loop:
-    sleep 1
-    rjmp loop
+    sleep 1 /* Go into sleepstate frozen (wake on internal or external interupt) */
+    rjmp loop /* Interupt event over, go back to sleep */
 
 rol:
-        cp.w r4, r10
-        breq rol_end
-        lsl r4, 1
-        rjmp set_leds
+        cp.w r4, r10 /* check if the marker is about to fall off the edge */
+        breq rol_end /* if it was, go to rol_end */
+        lsl r4, 1 /* logic shift left r4 */
+        rjmp set_leds /* set leds */
 
 rol_end:
-        mov r4, r12
+        mov r4, r12 /* set r4 to r12 and set_leds */
         rjmp set_leds
 ror:
-        cp.w r4, r12
-        breq ror_end
-        lsr r4, 1
-        rjmp set_leds
+        cp.w r4, r12 /* check if the marker is about to fall off the edge */
+        breq ror_end /* if it was, go to ror_end */
+        lsr r4, 1 /* logic shift right r4 */
+        rjmp set_leds /* set leds */
+
 
 ror_end:
-        mov r4, r10
+        mov r4, r10 /* set r4 to r10 and set_leds */
         rjmp set_leds
 
 set_leds:
-        st.w r1[AVR32_PIO_CODR], r2
-        st.w r1[AVR32_PIO_SODR], r4
-        rjmp button_interrupt_return
+        st.w r1[AVR32_PIO_CODR], r2 /* turn off all leds */
+        st.w r1[AVR32_PIO_SODR], r4 /* turn on leds accordingly to the state of r4 */
+        rjmp button_interrupt_return /* go to button_interrupt_return */
 
-check_buttons:   /* evig løkke */
-        mov r9, r5
+check_buttons:   
+        mov r9, r5 /* store the old r5 in r9 for future reference */
         ld.w r5,r0[AVR32_PIO_PDSR] /* get status of buttons in r5 */
-        com r5
-        mov r6, r5
-        and r5, r10
+        com r5 /* invert input from r5*/
+        mov r6, r5 /* make a cpoy of r5 */
+        and r5, r10 /* check if button 7 is pressed */
         cp.w r5, r10
-        breq rol
-        and r6, r11
+        breq rol /* jump to rol if is was pressed */
+        and r6, r11 /* check if button 5 is pressed */
         cp.w r6, r11
-        breq ror
+        breq ror /* jump to ror if it aws pressed */
 
 /* Introducing some delay to combat bouncing */
 debounce:
@@ -106,15 +109,15 @@ debounce:
 button_interrupt:
         ld.w r8, r0[AVR32_PIO_ISR]  /* loading from ISR to notify that
                                         the interruption is being handled */
-        st.w --sp, r5
-        ld.w r5, r0[AVR32_PIO_PDSR]
-        cp.w r5, r7
-        mov r7, r5
-        ld.w r5, sp++
-        brne check_buttons
+        st.w --sp, r5 /* put content of r5 on tos */
+        ld.w r5, r0[AVR32_PIO_PDSR] /* load the buttons state */
+        cp.w r5, r7 /* compare the old and the new buttonstate to detect debounce glitches*/
+        mov r7, r5 /* store the buttonstate for future usage */
+        ld.w r5, sp++ /* get the old r5 from tos */
+        brne check_buttons /* if the interupt was real, check_buttons */
     button_interrupt_return:
         call debounce
-        rete
+        rete /* end the interrupt */
 
 
 piob_pointer: 
@@ -123,7 +126,8 @@ pioc_pointer:
         .int AVR32_PIOC /* loads the adress of PIOC to a variable */
 intc_pointer: 
         .int AVR32_INTC /* loads the adress of INTC to a variable */
-
+stackpointer:
+	.int _stack
 /*****************************************************************************/
 /* data-segment */
 /* alle dataområder som skal kunne skrives til må plasseres her */

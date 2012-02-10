@@ -18,9 +18,6 @@ SR_GM =   16  /* statusregisterflag "GM" er bit 16 */
 .globl  _start
 _start: /* programutføring vil starte her */
 
-    /* This must be loaded first. Why? Nobody knows! */
-    lddpc sp, stack_pointer
-
     /* Setting up various constants for easy access later */
     /* r0:  PIO B (BUTTONS) */
     /* r1:  PIO C (LEDS)    */
@@ -28,6 +25,7 @@ _start: /* programutføring vil starte her */
     lddpc r0, piob_pointer /*saving PIO constants for later use */
     lddpc r1, pioc_pointer
     lddpc r13, intc_pointer
+    lddpc sp, stackpointer
  
     mov r2, 0xff /* 11111111 used to initialize the diodes*/
     mov r3, 0x00 /* 00000000 used on various occasions */
@@ -128,7 +126,7 @@ pioc_pointer:
         .int AVR32_PIOC /* loads the adress of PIOC to a variable */
 intc_pointer: 
         .int AVR32_INTC /* loads the adress of INTC to a variable */
-stack_pointer:
+stackpointer:
 	.int _stack
 /*****************************************************************************/
 /* data-segment */

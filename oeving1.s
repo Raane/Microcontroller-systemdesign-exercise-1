@@ -87,32 +87,6 @@ set_leds:
         st.w r1[AVR32_PIO_SODR], r4 /* turn on leds accordingly to the state of r4 */
         rjmp button_interrupt_return /* go to button_interrupt_return */
 
-check_buttons:   
-       /* mov r9, r5 /* store the old r5 in r9 for future reference *
-        ld.w r5,r0[AVR32_PIO_PDSR] /* get status of buttons in r5 *
-        com r5 /* invert input from r5*
-        mov r6, r5 /* make a cpoy of r5 *
-        and r5, r10 /* check if button 7 is pressed *
-        cp.w r5, r10
-        breq rol /* jump to rol if is was pressed *
-        and r6, r11 /* check if button 5 is pressed *
-        cp.w r6, r11
-        breq ror /* jump to ror if it aws pressed */
-	
-        ld.w r5,r0[AVR32_PIO_PDSR] /* get status of buttons in r5 */
-	com r5
-	mov r6, 0b10100000
-	and r5, r6	
-	mov r7, r5
-	eor r5, r9
-	and r5, r7
-	mov r9,r7
-	cp.w r5, r10
-	breq rol
-	cp.w r5, r11
-	breq ror
-	rjmp button_interrupt_return
-
 /* Introducing some delay to combat bouncing */
 debounce:
     mov r5, 0xffff
@@ -125,13 +99,19 @@ debounce:
 button_interrupt:
         ld.w r8, r0[AVR32_PIO_ISR]  /* loading from ISR to notify that
                                         the interruption is being handled */
-        /*st.w --sp, r5 /* put content of r5 on tos *
-        ld.w r5, r0[AVR32_PIO_PDSR] /* load the buttons state *
-        cp.w r5, r7 /* compare the old and the new buttonstate to detect debounce glitches*
-        mov r7, r5 /* store the buttonstate for future usage *
-        ld.w r5, sp++ /* get the old r5 from tos *
-        brne check_buttons /* if the interupt was real, check_buttons */
-	rjmp check_buttons
+	ld.w r5,r0[AVR32_PIO_PDSR] /* get status of buttons in r5 */
+	com r5 /* Invert the buttons */
+	mov r6, 0b10100000
+	and r5, r6 /* Filters out uninteresting buttons */
+	mov r7, r5 /* Backs up buttons for future usage */
+	eor r5, r9 /* Detects buttons with changes */
+	and r5, r7 /* Filters button releases */
+	mov r9,r7 /* backs up the buttonstate for next interupt */
+	cp.w r5, r10 /* Checks if SW7 was pressed and jumps if needed */
+	breq rol
+	cp.w r5, r11 /* Checks if SW5 was pressed and jumps if needed */
+	breq ror
+
     button_interrupt_return:
         call debounce
         rete /* end the interrupt */

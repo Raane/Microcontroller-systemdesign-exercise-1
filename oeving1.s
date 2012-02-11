@@ -31,7 +31,7 @@ _start: /* programutføring vil starte her */
  
     mov r2, 0xff /* 11111111 used to initialize the diodes*/
     mov r3, 0x00 /* 00000000 used on various occasions */
-    mov r4, 0b00000001 /* constant to set initial LED  */
+    mov r4, 0b00001000 /* constant to set initial LED  */
     mov r10, 0b10000000
     mov r11, 0b00100000
     mov r12, 0b00000001

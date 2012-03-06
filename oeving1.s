@@ -40,7 +40,7 @@ _start: /* entry point */
     st.w r0[AVR32_PIO_PUER], r2 /* set IO pins to be input for BUTTON */
 
     /* setting up interrupts for the buttons */
-    st.w r0[AVR32_PIO_IER], r2 /* Enabling interrupts for all the buttons */
+    st.w r0[AVR32_PIO_IER], r6 /* Enabling interrupts for all the buttons */
     mtsr 4, r3 /* We choose 0 to be the address for EVBA, as suggested in 
                   section 2.5.2 of the compendium. */
 

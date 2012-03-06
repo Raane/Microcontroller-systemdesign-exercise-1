@@ -60,7 +60,7 @@ _start: /* entry point */
 /* Main loop. Hang out here when nothing else is happening. */
 loop:
     sleep 1 /* Go into sleepstate frozen (wake on internal or external interupt) */
-    rjmp loop /* Interupt event over, go back to sleep */
+    rjmp set_leds /* set the leds after an interrupt has ended */
 
 
 
@@ -68,25 +68,25 @@ move_paddle_left:
         cp.w r4, r10 /* check if the paddle is about to fall off the left edge */
         breq move_paddle_left_end /* if it is, go to move_paddle_left_end */
         lsl r4, 1 /* move the paddle one to the left */
-        rjmp set_leds 
+        rjmp button_interrupt_return /* go to button_interrupt_return */
     move_paddle_left_end:
         mov r4, r12 /* move the paddle to the far right */
-        rjmp set_leds
+        rjmp button_interrupt_return /* go to button_interrupt_return */
 
 
 move_paddle_right:
         cp.w r4, r12 /* check if the paddle is about to fall off the right edge */
         breq move_paddle_right_end /* if it was, go to move_paddle_right_end */
         lsr r4, 1 /* logic shift right r4 */
-        rjmp set_leds /* set leds */
+        rjmp button_interrupt_return /* go to button_interrupt_return */
     move_paddle_right_end:
         mov r4, r10 /* set r4 to r10 and set_leds */
-        rjmp set_leds
+        rjmp button_interrupt_return /* go to button_interrupt_return */
 
 set_leds:
         st.w r1[AVR32_PIO_CODR], r2 /* turn off all leds */
         st.w r1[AVR32_PIO_SODR], r4 /* turn on leds according to the state of r4 */
-        rjmp button_interrupt_return /* go to button_interrupt_return */
+        rjmp loop /* Done setting LEDs,, go back to sleep */
 
 
 button_interrupt:
@@ -103,7 +103,6 @@ button_interrupt:
         breq move_paddle_left
         cp.w r5, r11 /* Checks if SW5 was pressed and jumps if needed */
         breq move_paddle_right
-
     button_interrupt_return:
         call debounce
         rete /* end the interrupt */

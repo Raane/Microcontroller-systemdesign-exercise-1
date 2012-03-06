@@ -28,6 +28,7 @@ _start: /* entry point */
     mov r2,  0b11111111
     mov r3,  0b00000000 
     mov r4,  0b00001000 /* constant to set initial LED  */
+    mov r6,  0b10100000 /* contant to set button masks */
     mov r10, 0b10000000 /* left button mask */
     mov r11, 0b00100000 /* right button mask */
     mov r12, 0b00000001
@@ -93,7 +94,6 @@ button_interrupt:
                                         the interruption is being handled */
         ld.w r5,r0[AVR32_PIO_PDSR] /* get status of buttons in r5 */
         com r5 /* Invert the buttons */
-        mov r6, 0b10100000
         and r5, r6 /* Filters out uninteresting buttons */
         mov r7, r5 /* Backs up buttons for future usage */
         eor r5, r9 /* Detects buttons with changes */
